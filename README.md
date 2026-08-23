@@ -9,6 +9,30 @@ VRChatでYouTube動画を再生した際に、**「映像は出るのに音が�
 > - 使用前にVRChatの最新の利用規約等を確認し、使用は各自の判断でお願いします。
 > - DRM回避を目的としたツールではありません。
 
+## Denoの手動インストールは不要です
+
+**Denoを別途ダウンロードしたり、PATHを設定したりする必要はありません。**
+
+この `yt-dlp.exe` は、初回実行時にDenoが見つからない場合、公式Deno GitHub Releasesから **Deno 2.9.5** を自動取得します。
+
+初回起動時の処理は次の通りです。
+
+1. ローカルキャッシュにDenoがあるか確認
+2. 無ければ公式GitHub ReleasesからWindows x64版ZIPをダウンロード
+3. SHA-512で配布ファイルを検証
+4. `deno.exe` を自動展開
+5. yt-dlpからDenoをJavaScript runtimeとして使用
+
+保存先は次です。
+
+```text
+%LOCALAPPDATA%\VRChatYTDLP-OneFile\bin\
+```
+
+一度取得したDenoは次回以降再利用されます。
+
+> 初回だけGitHub Releasesへ接続できるインターネット環境が必要です。GitHubへの通信がブロックされている場合は自動取得に失敗します。
+
 ## 症状と原因
 
 今回の環境では、通常のyt-dlpで `itag=137` / `itag=399` などの**映像専用ストリーム**が選択され、VRChatでは映像だけ再生されて音声が出ないケースがありました。
@@ -17,7 +41,7 @@ VRChatでYouTube動画を再生した際に、**「映像は出るのに音が�
 
 このラッパーでは、主に次の処理を行います。
 
-- DenoをJavaScript runtimeとして利用
+- DenoをJavaScript runtimeとして利用（必要なら自動取得）
 - YouTubeの `web_embedded` クライアントを優先
 - 映像＋音声を含む単一ストリームだけを選択
 - H.264/AAC HLS → 音声付きHLS → 音声付きMP4 → その他の単一A/V の順に選択
@@ -40,7 +64,8 @@ VRChatでYouTube動画を再生した際に、**「映像は出るのに音が�
 
 5. 元の `yt-dlp.exe` を必要ならバックアップします。
 6. ダウンロードした `yt-dlp.exe` に置き換えます。
-7. **VRChatは再起動せず**、YouTube動画を再生して確認します。
+7. **Denoは入れなくて大丈夫です。** 初回の動画再生時に必要なら自動取得されます。
+8. **VRChatは再起動せず**、YouTube動画を再生して確認します。
 
 > VRChatを再起動すると、VRChat側のURL Resolverに戻される場合があります。その場合は、VRChat起動後にもう一度差し替えてください。
 
@@ -59,9 +84,11 @@ VRChat側のURL Resolverが再取得されます。
 
 ## One-File版について
 
-VRChatの `Tools` フォルダに置くファイルは `yt-dlp.exe` 1個だけです。
+VRChatの `Tools` フォルダに置くファイルは **`yt-dlp.exe` 1個だけ**です。
 
-内部では必要に応じて次の固定バージョンを公式GitHub Releasesから取得し、ローカルキャッシュへ保存します。
+`real-yt-dlp.exe` や `deno.exe` を手動で同じフォルダへ置く必要はありません。
+
+内部では必要に応じて次の固定バージョンを公式GitHub Releasesから自動取得し、ローカルキャッシュへ保存します。
 
 - yt-dlp: `2026.08.19`
 - Deno: `2.9.5`
@@ -76,6 +103,12 @@ VRChatの `Tools` フォルダに置くファイルは `yt-dlp.exe` 1個だけ�
 %LOCALAPPDATA%\VRChatYTDLP-OneFile\yt-dlp-onefile.log
 ```
 
+Denoの自動取得が行われた場合は、ログに次のような行が残ります。
+
+```text
+BOOTSTRAP downloading official Deno 2.9.5
+```
+
 VRChatの `output_log` にはIPアドレスや期限付き・署名付きGooglevideo URLなどが含まれる場合があります。Issue等へ貼る場合は内容を確認してください。
 
 ## ネットワークアクセス
@@ -83,7 +116,7 @@ VRChatの `output_log` にはIPアドレスや期限付き・署名付きGooglev
 このツールは機能上、次の通信を行います。
 
 - YouTube / Googlevideo: 動画URLの解決・事前検査
-- GitHub Releases: 初回のyt-dlp / Deno取得
+- GitHub Releases: 初回のyt-dlp / Deno自動取得
 
 独自のテレメトリ送信機能は実装していません。
 
